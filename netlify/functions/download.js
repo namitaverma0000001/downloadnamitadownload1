@@ -8,13 +8,14 @@ exports.handler = async (event) => {
 
     const format = ytdl.chooseFormat(info.formats, { quality: itag });
 
+    // IMPORTANT: return streaming proxy URL (not direct YouTube URL)
+    const streamUrl = `${process.env.URL || "https://your-site.netlify.app"}/.netlify/functions/stream?video=${encodeURIComponent(url)}&itag=${itag}`;
+
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json"
-      },
       body: JSON.stringify({
-        downloadUrl: format.url,
+        success: true,
+        downloadUrl: streamUrl,
         title: info.videoDetails.title
       })
     };
@@ -22,7 +23,7 @@ exports.handler = async (event) => {
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message })
+      body: JSON.stringify({ success: false, error: err.message })
     };
   }
 };
