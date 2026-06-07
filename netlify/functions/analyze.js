@@ -1,8 +1,15 @@
-const ytdl = require("ytdl-core");
+const ytdl = require("@distube/ytdl-core");
 
 exports.handler = async (event) => {
   try {
     const { url } = JSON.parse(event.body);
+
+    if (!url || !ytdl.validateURL(url)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ success: false, error: "Invalid URL" })
+      };
+    }
 
     const info = await ytdl.getInfo(url);
 
@@ -10,8 +17,7 @@ exports.handler = async (event) => {
       .filter(f => f.qualityLabel)
       .map(f => ({
         quality: f.qualityLabel,
-        itag: f.itag,
-        mime: f.mimeType
+        itag: f.itag
       }));
 
     return {
@@ -22,6 +28,7 @@ exports.handler = async (event) => {
         channel: info.videoDetails.author.name,
         duration: info.videoDetails.lengthSeconds,
         views: info.videoDetails.viewCount,
+        thumbnail: info.videoDetails.thumbnails?.slice(-1)[0]?.url,
         formats
       })
     };
@@ -29,7 +36,10 @@ exports.handler = async (event) => {
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ success: false, error: err.message })
+      body: JSON.stringify({
+        success: false,
+        error: "YouTube blocked request (410 error)"
+      })
     };
   }
 };
